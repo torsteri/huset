@@ -119,14 +119,17 @@ footer{padding:32px 0 48px;color:var(--muted);font-size:14px;border-top:1px soli
         <div class="note">Vi bruker e-posten din bare til å sende svaret og si fra når tjenesten åpner. Du kan be oss slette den når som helst.</div>
       </div>
       <div class="card">
-        <form id="wl" data-action="FORM_ACTION" onsubmit="event.preventDefault();this.style.display='none';document.querySelector('.thanks').style.display='block'">
-          <label>E-post<input type="email" name="epost" required autocomplete="email"></label>
+        <form id="wl" action="https://formsubmit.co/sjekkhus@gmail.com" method="POST">
+          <input type="hidden" name="_subject" value="Ny tomtesjekk">
+          <input type="hidden" name="_template" value="table">
+          <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
+          <label>E-post<input type="email" name="email" required autocomplete="email"></label>
           <label>Adresse<input id="adr" name="adresse" required autocomplete="street-address"></label>
           <label>Kommune
             <select name="kommune" required><option value="">Velg</option><option>Bærum</option><option>Asker</option><option>Oslo</option><option>Annen kommune (venteliste)</option></select>
           </label>
           <label>Hva vil du bygge?
-            <select required>
+            <select name="hva" required>
               <option value="">Velg</option>
               <option>Bod eller uthus</option>
               <option>Garasje eller carport</option>
@@ -137,7 +140,7 @@ footer{padding:32px 0 48px;color:var(--muted);font-size:14px;border-top:1px soli
           </label>
           <label>Omtrent hvor stort? (valgfritt)<input name="maal" placeholder="f.eks. 3 × 6 m, saltak"></label>
           <label>Når?
-            <select>
+            <select name="naar">
               <option>I løpet av 2027</option>
               <option>Om 1–2 år</option>
               <option>Bare nysgjerrig</option>
@@ -147,6 +150,7 @@ footer{padding:32px 0 48px;color:var(--muted);font-size:14px;border-top:1px soli
           <label class="check"><input type="checkbox" required> Jeg godtar at Huset lagrer e-post og adresse for å sende meg svaret</label>
           <button>Send meg tomtesjekken</button>
         </form>
+        <p class="small" id="feil" style="display:none">Noe gikk galt. Prøv igjen, eller send adressen din til sjekkhus@gmail.com.</p>
         <div class="thanks"><h3>Takk!</h3><p>Vi sjekker adressen din og svarer på e-post innen to virkedager.</p></div>
       </div>
     </div>
@@ -159,10 +163,14 @@ footer{padding:32px 0 48px;color:var(--muted);font-size:14px;border-top:1px soli
 </div>
 <div class="draft">UTKAST</div>
 <script>
-// Sender skjemaet til gratis skjematjeneste når FORM_ACTION er byttet ut med en ekte adresse.
-document.getElementById('wl').addEventListener('submit', function(){
-  var url=this.dataset.action; if(!url||url==='FORM_ACTION') return;
-  fetch(url,{method:'POST',body:new FormData(this),headers:{'Accept':'application/json'}}).catch(function(){});
+// Sender skjemaet til FormSubmit (gratis, uten konto). Første innsending utløser en
+// bekreftelses-e-post til sjekkhus@gmail.com som må klikkes én gang.
+document.getElementById('wl').addEventListener('submit', function(e){
+  e.preventDefault();
+  var f=this, b=f.querySelector('button'); b.disabled=true;
+  fetch('https://formsubmit.co/ajax/sjekkhus@gmail.com',{method:'POST',body:new FormData(f),headers:{'Accept':'application/json'}})
+    .then(function(r){ if(!r.ok) throw r; f.style.display='none'; document.querySelector('.thanks').style.display='block'; })
+    .catch(function(){ b.disabled=false; document.getElementById('feil').style.display='block'; });
 });
 </script>
 </body>
