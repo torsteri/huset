@@ -55,11 +55,14 @@
   function avstand(polyA, polyB) {
     // minste avstand mellom to polygoner i meter (0 hvis de overlapper)
     if (turf.booleanIntersects(polyA, polyB)) return 0;
-    var la = turf.polygonToLine(polyA), lb = turf.polygonToLine(polyB), m = Infinity;
-    turf.coordEach(polyA, function (c) { m = Math.min(m, turf.pointToLineDistance(turf.point(c), lb, { units: 'meters' })); });
-    turf.coordEach(polyB, function (c) { m = Math.min(m, turf.pointToLineDistance(turf.point(c), la, { units: 'meters' })); });
+    var la = linjerAv(polyA), lb = linjerAv(polyB), m = Infinity;
+    var naer = function (c, ls) { ls.forEach(function (l) { m = Math.min(m, turf.pointToLineDistance(turf.point(c), l, { units: 'meters' })); }); };
+    turf.coordEach(polyA, function (c) { naer(c, lb); });
+    turf.coordEach(polyB, function (c) { naer(c, la); });
     return m;
   }
+  // Alle kantlinjer som enkle LineStrings (tomter og bygg kan ha hull eller flere deler).
+  function linjerAv(poly) { return turf.flatten(turf.polygonToLine(poly)).features; }
   function trygg(f, fallback) { try { return f(); } catch (e) { return fallback; } }
 
   // ------------------------------------------------------------ data
@@ -190,9 +193,19 @@
         (utn === null ? ' Det er på grensen, og kartdataene er ikke nøyaktige nok til å avgjøre det. Vi måler for deg' : '') +
         (utn === false ? ' Byggene som står der fra før bruker det meste av tomta' : ''));
     } else {
-      r(null, 'Utnyttelse av tomta', 'Regelen for din kommune legges inn snart. Vi sjekker den for deg');
+      var eks2 = 0;
+      state.sone.paTomta.forEach(function (b) { eks2 += trygg(function () { return turf.area(turf.intersect(turf.featureCollection([b, e]))); }, 0); });
+      var pst = (eks2 + areal) / tomt * 100;
+      r(pst <= 20 ? true : null, 'Utnyttelse av tomta', 'Med det nye bygget er ' + fmt(pst) + ' % av tomta bebygd (' + fmt(eks2) + ' m² i dag og ' + fmt(areal) +
+        ' m² nytt, på ' + Math.round(tomt) + ' m²). Vanlig grense i småhusområder rundt Oslo er 20–24 %, ' +
+        (pst <= 20 ? 'så dette ser trygt ut.' : 'så dette må sjekkes mot planen for tomta din. Vi gjør det for deg.'));
     }
-    r(null, 'Reguleringsplanen', 'Kan ha strengere regler for høyde, plassering og byggegrense mot vei. Vi leser den for deg');
+    var innsyn = { '3201': ['https://www.arealplaner.no/baerum3201/', 'Bærums planregister'],
+      '3203': ['https://www.arealplaner.no/asker3203/', 'Askers planregister'],
+      '0301': ['https://od2.pbe.oslo.kommune.no/kart/', 'Oslos plankart'] }[state.knr];
+    r(null, 'Reguleringsplanen', 'Planen for tomta kan ha egne regler for høyde, plassering og avstand til vei. Vi leser den og bekrefter svaret ditt' +
+      (innsyn ? ', eller du kan se den selv i <a href="' + innsyn[0] + '" target="_blank" rel="noopener">' + innsyn[1] + '</a> (gnr/bnr ' +
+        state.adresse.gardsnummer + '/' + state.adresse.bruksnummer + ').' : '.'));
 
     var brudd = ut.filter(function (x) { return x.ok === false; });
     state.sjekket = { regler: ut, brudd: brudd, poly: poly, mone: m, areal: areal };
@@ -200,8 +213,7 @@
     oppdaterKart();
   }
   function minAvstandTilGrense(poly, e) {
-    var linjer = turf.polygonToLine(e), m = Infinity;
-    var ls = linjer.type === 'FeatureCollection' ? linjer.features : [linjer];
+    var m = Infinity, ls = linjerAv(e);
     turf.coordEach(poly, function (c) {
       ls.forEach(function (l) { m = Math.min(m, turf.pointToLineDistance(turf.point(c), l, { units: 'meters' })); });
     });
@@ -391,7 +403,8 @@
         $('status').textContent = 'Tomt på ' + Math.round(turf.area(state.eiendom)) + ' m². Dra bygget rundt på kartet.' +
           (state.bygg.length ? '' : ' Fant ingen bygninger i kartdataene, så avstand til huset må du sjekke selv.');
       });
-    }).catch(function () {
+    }).catch(function (feil) {
+      if (window.console) console.warn('Tomtesjekk:', feil);
       if (nr !== state.forsok) return;
       $('status').textContent = 'Fant ikke eiendomsgrensen for denne adressen. Prøv en annen adresse, eller send den til oss under.';
     });
