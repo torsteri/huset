@@ -164,9 +164,9 @@
       return {
         ok: r[0] !== null,
         planer: reg.filter(function (x) { return /RpOmråde/.test(x.objekttypenavn || '') && !/uregulert/i.test(x.plannavn || ''); }),
-        formaal: reg.filter(function (x) { return /Formål/.test(x.objekttypenavn || ''); }),
+        formaal: reg.filter(function (x) { return /formål/i.test(x.objekttypenavn || ''); }),
         kp: kp.filter(function (x) { return /KpOmråde/.test(x.objekttypenavn || ''); }),
-        kpFormaal: kp.filter(function (x) { return /Formål/.test(x.objekttypenavn || ''); })
+        kpFormaal: kp.filter(function (x) { return /formål/i.test(x.objekttypenavn || ''); })
       };
     });
   }
