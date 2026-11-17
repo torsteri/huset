@@ -313,6 +313,7 @@
         if (map.queryRenderedFeatures(e.point, { layers: ['nytt'] }).length) return;
         if (turf.booleanPointInPolygon([e.lngLat.lng, e.lngLat.lat], state.eiendom)) { state.nytt.senter = [e.lngLat.lng, e.lngLat.lat]; sjekk(); }
       });
+      state.kartKlar = true; venter.splice(0).forEach(function (f) { f(); });
       var p = new URLSearchParams(location.search).get('adresse');
       if (p) { $('sok').value = p; velgForste(p); }
     });
@@ -371,19 +372,35 @@
     $('f-kommune').value = titleCase(a.kommunenavn || '');
     map.resize();
     $('verktoy').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    var nr = (state.forsok = (state.forsok || 0) + 1);
     hentEiendom(a).then(function (e) {
-      state.eiendom = e;
-      return hentBygg(e);
-    }).then(function (bygg) {
-      return bygg.length ? bygg : byggFraFliser(state.eiendom);
-    }).then(function (bygg) {
-      state.bygg = bygg;
-      lagSoner(); tegnTomt(); startPlassering();
-      $('status').textContent = 'Tomt på ' + Math.round(turf.area(state.eiendom)) + ' m². Dra bygget rundt på kartet.' +
-        (state.bygg.length ? '' : ' Fant ingen bygninger i kartdataene, så avstand til huset må sjekkes selv.');
+      if (nr !== state.forsok) return;
+      state.eiendom = e; state.bygg = [];
+      // Vis tomta med en gang, bygningene kommer etterpå.
+      klar(function () { lagSoner(); tegnTomt(); startPlassering(); });
+      $('status').textContent = 'Tomt på ' + Math.round(turf.area(e)) + ' m². Henter bygningene rundt…';
+      // Bygninger: vektorfliser først (raskt), så Overpass. Gir opp etter noen sekunder.
+      return medTid(byggFraFliser(e), 7000, []).then(function (b) {
+        return b.length ? b : medTid(hentBygg(e), 7000, []);
+      }).then(function (bygg) {
+        if (nr !== state.forsok) return;
+        state.bygg = bygg;
+        klar(function () {
+          lagSoner(); tegnTomt(); startPlassering();
+        });
+        $('status').textContent = 'Tomt på ' + Math.round(turf.area(state.eiendom)) + ' m². Dra bygget rundt på kartet.' +
+          (state.bygg.length ? '' : ' Fant ingen bygninger i kartdataene, så avstand til huset må du sjekke selv.');
+      });
     }).catch(function () {
+      if (nr !== state.forsok) return;
       $('status').textContent = 'Fant ikke eiendomsgrensen for denne adressen. Prøv en annen adresse, eller send den til oss under.';
     });
+  }
+  // Kjør når kartet er lastet (adressen kan komme før kartet er klart).
+  var venter = [];
+  function klar(f) { if (state.kartKlar) f(); else venter.push(f); }
+  function medTid(p, ms, reserve) {
+    return Promise.race([p.catch(function () { return reserve; }), new Promise(function (ok) { setTimeout(function () { ok(reserve); }, ms); })]);
   }
   function titleCase(s) { return s.toLowerCase().replace(/(^|[\s-])\S/g, function (c) { return c.toUpperCase(); }); }
 
