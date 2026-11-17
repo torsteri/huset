@@ -239,7 +239,7 @@
     map.getSource('nytt').setData(s.poly);
     map.getSource('tak').setData(takstriper(state.nytt));
     map.setPaintProperty('nytt-linje', 'line-color', ok ? '#1f9d55' : '#d93025');
-    map.setPaintProperty('tak', 'fill-extrusion-color', ok ? '#cfe9d6' : '#f6c9c4');
+    map.setPaintProperty('tak', 'fill-extrusion-color', ok ? '#3fae6a' : '#e5534b');
   }
 
   function tegnTomt() {
@@ -287,7 +287,7 @@
         paint: { 'fill-extrusion-color': '#b9bec4', 'fill-extrusion-opacity': 0.55,
           'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 6], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0] } });
       map.addLayer({ id: 'bygg', type: 'line', source: 'bygg', paint: { 'line-color': '#374151', 'line-width': 2 } });
-      map.addLayer({ id: 'tak', type: 'fill-extrusion', source: 'tak', paint: { 'fill-extrusion-color': '#cfe9d6', 'fill-extrusion-height': ['get', 'h'], 'fill-extrusion-base': 0, 'fill-extrusion-opacity': 0.95 } });
+      map.addLayer({ id: 'tak', type: 'fill-extrusion', source: 'tak', paint: { 'fill-extrusion-color': '#3fae6a', 'fill-extrusion-height': ['get', 'h'], 'fill-extrusion-base': 0, 'fill-extrusion-opacity': 0.95 } });
       map.addLayer({ id: 'nytt', type: 'fill', source: 'nytt', paint: { 'fill-color': '#ffffff', 'fill-opacity': 0.01 } });
       map.addLayer({ id: 'nytt-linje', type: 'line', source: 'nytt', paint: { 'line-color': '#1f9d55', 'line-width': 3 } });
 
