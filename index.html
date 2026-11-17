@@ -1,0 +1,169 @@
+<!doctype html>
+<!--
+  UTKAST – IKKE PUBLISERT. Huset, landingsside med venteliste.
+  Skjemaet sender ingenting ennå. Før publisering: sett FORM_ACTION under til
+  skjemaets adresse (Tally eller Formspree, gratis), legg siden på GitHub Pages
+  (gratis), og få grønt lys fra T. Se /mnt/project-files/etterspørsel/plan.md.
+-->
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Huset – hva kan du bygge?</title>
+<meta name="description" content="Gratis tomtesjekk for Bærum, Asker og Oslo: se om boden, garasjen eller annekset ditt kan bygges uten søknad.">
+<style>
+:root{
+  --bg:#f6f3ee; --card:#ffffff; --ink:#1d1f1c; --muted:#5d625a; --line:#e2ddd3;
+  --accent:#2f5d46; --accent-ink:#ffffff; --ok:#2f7a4a; --warn:#a46a00; --bad:#b03a2e;
+  --soft:#e9efe9;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151714; --card:#1e211d; --ink:#ecebe6; --muted:#a3a89f; --line:#30342e;
+    --accent:#7fbf98; --accent-ink:#10130f; --ok:#7fcf98; --warn:#e0b050; --bad:#ef8a7e; --soft:#233028;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151714; --card:#1e211d; --ink:#ecebe6; --muted:#a3a89f; --line:#30342e;
+  --accent:#7fbf98; --accent-ink:#10130f; --ok:#7fcf98; --warn:#e0b050; --bad:#ef8a7e; --soft:#233028;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+header{display:flex;justify-content:space-between;align-items:center;padding:20px 0}
+.logo{font-weight:700;font-size:20px;letter-spacing:-.01em;display:flex;gap:8px;align-items:center}
+.logo svg{width:26px;height:26px}
+header a{color:var(--muted);text-decoration:none;font-size:15px}
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:40px 0 56px}
+h1{font-size:clamp(32px,5vw,50px);line-height:1.08;letter-spacing:-.02em;margin:0 0 16px}
+.lead{color:var(--muted);font-size:19px;margin:0 0 24px;max-width:34em}
+.search{display:flex;gap:8px;flex-wrap:wrap}
+input,select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
+.search input{flex:1 1 240px}
+button{font:inherit;font-weight:600;background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:12px 20px;cursor:pointer}
+.small{font-size:14px;color:var(--muted);margin-top:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px}
+.result h3{margin:0 0 4px;font-size:15px;color:var(--muted);font-weight:500}
+.result .verdict{font-size:22px;font-weight:700;margin:0 0 14px}
+.rows{list-style:none;margin:0;padding:0}
+.rows li{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-size:15px}
+.rows b{font-weight:600;white-space:nowrap}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+section{padding:48px 0;border-top:1px solid var(--line)}
+h2{font-size:28px;letter-spacing:-.01em;margin:0 0 24px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.steps .card p{margin:6px 0 0;color:var(--muted);font-size:16px}
+.num{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--soft);color:var(--accent);font-weight:700;font-size:15px}
+.wl{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
+form{display:grid;gap:12px}
+label{font-size:14px;color:var(--muted);display:grid;gap:4px}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+.check input{margin-top:4px}
+.note{background:var(--soft);border-radius:12px;padding:16px;font-size:15px;color:var(--ink)}
+footer{padding:32px 0 48px;color:var(--muted);font-size:14px;border-top:1px solid var(--line)}
+.thanks{display:none}
+.draft{position:fixed;right:12px;bottom:12px;background:var(--bad);color:#fff;font-size:12px;font-weight:700;padding:6px 10px;border-radius:8px}
+@media (max-width:820px){.hero,.wl{grid-template-columns:1fr}.steps{grid-template-columns:1fr}.hero{padding-top:16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 12 4l9 7v9H3z"/><path d="M9 20v-6h6v6"/></svg>
+      Huset
+    </div>
+    <a href="#venteliste">Venteliste</a>
+  </header>
+
+  <div class="hero">
+    <div>
+      <h1>Hva kan du bygge på tomta di uten å søke?</h1>
+      <p class="lead">Skriv inn adressen din. Vi leser reguleringsplanen og byggereglene og sender deg et svar på om boden, garasjen eller annekset ditt kan settes opp uten søknad, og hva som må sjekkes først.</p>
+      <form class="search" onsubmit="event.preventDefault();document.getElementById('adr').value=this.q.value;document.getElementById('venteliste').scrollIntoView({behavior:'smooth'})">
+        <input name="q" aria-label="Adresse" placeholder="Din adresse, f.eks. Storgata 1, Bekkestua" required>
+        <button>Sjekk tomta</button>
+      </form>
+      <p class="small">Gratis for de første 20 adressene i Bærum, Asker og Oslo. Svar på e-post innen to virkedager.</p>
+    </div>
+
+    <div class="card result" aria-label="Eksempel på svar">
+      <h3>Eksempel: bod 3 × 12 m med saltak</h3>
+      <p class="verdict warn">Sannsynligvis, men sjekk to ting</p>
+      <ul class="rows">
+        <li>Areal <b class="ok">36 av 50 m²</b></li>
+        <li>Mønehøyde <b class="ok">3,7 av 4,0 m</b></li>
+        <li>Avstand til nabogrense <b class="ok">1,5 m (min 1 m)</b></li>
+        <li>Utnyttelse av tomta <b class="warn">19,8 av 20 %</b></li>
+        <li>Byggegrense mot vei <b class="warn">Sjekk</b></li>
+      </ul>
+    </div>
+  </div>
+
+  <section>
+    <h2>Fra idé til ferdig bygg</h2>
+    <div class="steps">
+      <div class="card"><span class="num">1</span><h3>Tomtesjekk</h3><p>Hva du kan bygge uten søknad, hvor nær naboen du kan gå, og hvor mye plass som er igjen på tomta.</p></div>
+      <div class="card"><span class="num">2</span><h3>Tegninger og melding</h3><p>Plan, fasader, snitt og situasjonsplan som henger sammen, ferdige til melding eller søknad til kommunen.</p></div>
+      <div class="card"><span class="num">3</span><h3>Materialer og bygging</h3><p>Komplett materialliste, sammenlignet mellom kjedene, og sjekklister til du er ferdig.</p></div>
+    </div>
+  </section>
+
+  <section id="venteliste">
+    <div class="wl">
+      <div>
+        <h2>Få tomtesjekken din</h2>
+        <p>Vi bygger tomtesjekken nå, og de første 20 adressene i Bærum, Asker og Oslo sjekker vi gratis. Du får et svar regel for regel: areal, høyde, avstand til nabo, hvor mye av tomta du har brukt, og hva reguleringsplanen sier.</p>
+        <p>Vil du gå videre, kan vi lage tegningene og meldingen eller søknaden til kommunen for deg.</p>
+        <div class="note">Vi bruker e-posten din bare til å sende svaret og si fra når tjenesten åpner. Du kan be oss slette den når som helst.</div>
+      </div>
+      <div class="card">
+        <form id="wl" data-action="FORM_ACTION" onsubmit="event.preventDefault();this.style.display='none';document.querySelector('.thanks').style.display='block'">
+          <label>E-post<input type="email" name="epost" required autocomplete="email"></label>
+          <label>Adresse<input id="adr" name="adresse" required autocomplete="street-address"></label>
+          <label>Kommune
+            <select name="kommune" required><option value="">Velg</option><option>Bærum</option><option>Asker</option><option>Oslo</option><option>Annen kommune (venteliste)</option></select>
+          </label>
+          <label>Hva vil du bygge?
+            <select required>
+              <option value="">Velg</option>
+              <option>Bod eller uthus</option>
+              <option>Garasje eller carport</option>
+              <option>Anneks</option>
+              <option>Tilbygg</option>
+              <option>Vet ikke ennå</option>
+            </select>
+          </label>
+          <label>Omtrent hvor stort? (valgfritt)<input name="maal" placeholder="f.eks. 3 × 6 m, saltak"></label>
+          <label>Når?
+            <select>
+              <option>I løpet av 2027</option>
+              <option>Om 1–2 år</option>
+              <option>Bare nysgjerrig</option>
+            </select>
+          </label>
+          <label class="check"><input type="checkbox" name="hjelp"> Jeg vil gjerne høre om hjelp med tegninger og søknad</label>
+          <label class="check"><input type="checkbox" required> Jeg godtar at Huset lagrer e-post og adresse for å sende meg svaret</label>
+          <button>Send meg tomtesjekken</button>
+        </form>
+        <div class="thanks"><h3>Takk!</h3><p>Vi sjekker adressen din og svarer på e-post innen to virkedager.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p><b>Forbehold:</b> Tomtesjekken er en automatisk vurdering basert på byggesaksforskriften (SAK10 § 4-1), kommuneplanen og reguleringsplanen for eiendommen. Den er ikke et vedtak fra kommunen. Du er selv ansvarlig for at det du bygger følger reglene. Er du i tvil, spør kommunen før du bygger.</p>
+    <p>Huset · Personvernerklæring (kommer)</p>
+  </footer>
+</div>
+<div class="draft">UTKAST</div>
+<script>
+// Sender skjemaet til gratis skjematjeneste når FORM_ACTION er byttet ut med en ekte adresse.
+document.getElementById('wl').addEventListener('submit', function(){
+  var url=this.dataset.action; if(!url||url==='FORM_ACTION') return;
+  fetch(url,{method:'POST',body:new FormData(this),headers:{'Accept':'application/json'}}).catch(function(){});
+});
+</script>
+</body>
+</html>
