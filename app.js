@@ -144,6 +144,39 @@
     }).catch(function () { return []; });
   }
 
+  // Planer for tomta fra DiBKs nasjonale arealplanbase (åpen WMS, GetFeatureInfo).
+  var NAP = 'https://nap.ft.dibk.no/services/wms/';
+  function wmsInfo(tjeneste, lag, pt) {
+    var d = 0.00015, lat = pt[1], lon = pt[0];
+    var q = new URLSearchParams({ service: 'WMS', version: '1.3.0', request: 'GetFeatureInfo', layers: lag, query_layers: lag,
+      crs: 'EPSG:4326', bbox: [lat - d, lon - d, lat + d, lon + d].join(','), width: 101, height: 101, i: 50, j: 50,
+      info_format: 'application/json', feature_count: 20 });
+    return hent(NAP + tjeneste + '/?' + q).then(function (r) { return (r.features || []).map(function (f) { return f.properties || {}; }); });
+  }
+  function hentPlaner(eiendom) {
+    var pt = turf.getCoord(turf.pointOnFeature(eiendom));
+    var rp = ['rpomrade_vn1', 'rpomrade_vn2', 'rpomrade_vn3', 'arealformal_vn1', 'arealformal_vn2', 'arealformal_vn3'].join(',');
+    return Promise.all([
+      medTid(wmsInfo('reguleringsplaner', rp, pt), 8000, null),
+      medTid(wmsInfo('kommuneplaner', 'kpomrade,arealformal_kp', pt), 8000, null)
+    ]).then(function (r) {
+      var reg = r[0] || [], kp = r[1] || [];
+      return {
+        ok: r[0] !== null,
+        planer: reg.filter(function (x) { return /RpOmråde/.test(x.objekttypenavn || '') && !/uregulert/i.test(x.plannavn || ''); }),
+        formaal: reg.filter(function (x) { return /Formål/.test(x.objekttypenavn || ''); }),
+        kp: kp.filter(function (x) { return /KpOmråde/.test(x.objekttypenavn || ''); }),
+        kpFormaal: kp.filter(function (x) { return /Formål/.test(x.objekttypenavn || ''); })
+      };
+    });
+  }
+  function formaalTekst(f) {
+    var k = String(f['reguleringsformål'] || f['arealformål'] || f['formål'] || '');
+    var u = f.utnyttingstall ? ' Utnyttelse i planen: ' + f.utnyttingstall + (/BYA|bebygd/i.test(String(f.utnyttingstype)) || f.utnyttingstype == '2' ? ' % BYA' : '') + '.' : '';
+    var navn = /^11/.test(k) || /^1[0-9]{3}$/.test(k) && k < 1200 ? 'boligformål' : /^1/.test(k) ? 'bebyggelse' : /^[56]/.test(k) ? 'landbruk, natur eller friluft (LNF)' : 'formål med kode ' + k;
+    return { navn: navn, bolig: /bolig|bebyggelse/.test(navn), utnytt: u };
+  }
+
   // ------------------------------------------------------------ soner
   function lagSoner() {
     var e = state.eiendom;
@@ -203,9 +236,23 @@
     var innsyn = { '3201': ['https://www.arealplaner.no/baerum3201/', 'Bærums planregister'],
       '3203': ['https://www.arealplaner.no/asker3203/', 'Askers planregister'],
       '0301': ['https://od2.pbe.oslo.kommune.no/kart/', 'Oslos plankart'] }[state.knr];
-    r(null, 'Reguleringsplanen', 'Planen for tomta kan ha egne regler for høyde, plassering og avstand til vei. Vi leser den og bekrefter svaret ditt' +
-      (innsyn ? ', eller du kan se den selv i <a href="' + innsyn[0] + '" target="_blank" rel="noopener">' + innsyn[1] + '</a> (gnr/bnr ' +
+    var pl = state.plan, lenke = function (url, t) { return '<a href="' + url + '" target="_blank" rel="noopener">' + t + '</a>'; };
+    if (pl && pl.planer.length) {
+      var p0 = pl.planer[0], aar = (p0.ikrafttredelsesdato || '').slice(0, 4), f0 = pl.formaal[0] ? formaalTekst(pl.formaal[0]) : null;
+      if (f0 && !f0.bolig) r(false, 'Formål i planen', 'Tomta er regulert til ' + f0.navn + '. Da kan du ikke bygge uten søknad');
+      r(null, 'Reguleringsplanen', 'Tomta er regulert i «' + p0.plannavn + '»' + (aar ? ' fra ' + aar : '') + (f0 ? ', til ' + f0.navn + '.' : '.') + (f0 ? f0.utnytt : '') +
+        ' Planen kan ha egne regler for høyde, plassering og avstand til vei. ' + (p0.link ? lenke(p0.link, 'Les planen') + ', eller la oss lese den for deg.' : 'Vi leser den for deg.') +
+        (pl.planer.length > 1 ? ' (' + (pl.planer.length - 1) + ' plan til gjelder også her.)' : ''));
+    } else if (pl && pl.ok) {
+      var k0 = pl.kpFormaal[0] ? formaalTekst(pl.kpFormaal[0]) : null;
+      if (k0 && !k0.bolig) r(false, 'Formål i kommuneplanen', 'Tomta ligger i ' + k0.navn + '. Da kan du ikke bygge uten søknad');
+      r(k0 && k0.bolig ? true : null, 'Reguleringsplanen', 'Tomta er ikke regulert, så kommuneplanen gjelder' + (k0 ? ': ' + k0.navn + '.' : '.') +
+        (pl.kp[0] && pl.kp[0].plannavn ? ' (' + pl.kp[0].plannavn + ')' : ''));
+    } else {
+      r(null, 'Reguleringsplanen', (pl === null ? 'Henter planen for tomta… ' : 'Fant ikke planen automatisk. ') +
+        'Vi leser den og bekrefter svaret ditt' + (innsyn ? ', eller du kan se den selv i ' + lenke(innsyn[0], innsyn[1]) + ' (gnr/bnr ' +
         state.adresse.gardsnummer + '/' + state.adresse.bruksnummer + ').' : '.'));
+    }
 
     var brudd = ut.filter(function (x) { return x.ok === false; });
     state.sjekket = { regler: ut, brudd: brudd, poly: poly, mone: m, areal: areal };
@@ -387,7 +434,9 @@
     var nr = (state.forsok = (state.forsok || 0) + 1);
     hentEiendom(a).then(function (e) {
       if (nr !== state.forsok) return;
-      state.eiendom = e; state.bygg = [];
+      state.eiendom = e; state.bygg = []; state.plan = null;
+      hentPlaner(e).then(function (pl) { if (nr === state.forsok) { state.plan = pl; klar(function () { if (state.nytt) sjekk(); }); } })
+        .catch(function () {});
       // Vis tomta med en gang, bygningene kommer etterpå.
       klar(function () { lagSoner(); tegnTomt(); startPlassering(); });
       $('status').textContent = 'Tomt på ' + Math.round(turf.area(e)) + ' m². Henter bygningene rundt…';
